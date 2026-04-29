@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Do Pro</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #f3f6fb;
+  text-align: center;
+}
+
+.container {
+  max-width: 520px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  margin-top: 30px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+input {
+  padding: 10px;
+  width: 65%;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background: #2d6cdf;
+  color: white;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.completed span {
+  text-decoration: line-through;
+  color: gray;
+}
+
+.delete {
+  background: red;
+}
+
+.filters button {
+  background: #eee;
+  color: black;
+}
+
+.filters .active {
+  background: #2d6cdf;
+  color: white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📋 To-Do List Pro</h2>
+
+<input id="taskInput" placeholder="اكتب مهمة..." />
+<button onclick="addTask()">إضافة</button>
+
+<br><br>
+
+<input id="searchInput" placeholder="بحث..." />
+
+<div class="filters">
+  <button class="active" onclick="setFilter('all')">الكل</button>
+  <button onclick="setFilter('active')">نشطة</button>
+  <button onclick="setFilter('done')">مكتملة</button>
+</div>
+
+<ul id="list"></ul>
+
+</div>
+
+<script>
+let list = document.getElementById("list");
+let filter = "all";
+
+// تحميل
+window.onload = () => {
+  let data = JSON.parse(localStorage.getItem("tasks")) || [];
+  data.forEach(t => create(t.text, t.done));
+};
+
+// Enter للإضافة
+document.getElementById("taskInput").addEventListener("keypress", e => {
+  if (e.key === "Enter") addTask();
+});
+
+// بحث مباشر
+document.getElementById("searchInput").addEventListener("input", render);
+
+// إضافة
+function addTask() {
+  let input = document.getElementById("taskInput");
+  if (!input.value.trim()) return;
+
+  create(input.value, false);
+  input.value = "";
+  save();
+}
+
+// إنشاء
+function create(text, done) {
+  let li = document.createElement("li");
+
+  let checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = done;
+
+  let span = document.createElement("span");
+  span.textContent = text;
+
+  if (done) li.classList.add("completed");
+
+  checkbox.onchange = () => {
+    li.classList.toggle("completed", checkbox.checked);
+    save();
+  };
+
+  // تعديل مباشر
+  span.ondblclick = () => {
+    let newText = prompt("تعديل المهمة:", span.textContent);
+    if (newText) {
+      span.textContent = newText;
+      save();
+    }
+  };
+
+  let del = document.createElement("button");
+  del.textContent = "حذف";
+  del.className = "delete";
+  del.onclick = () => {
+    li.remove();
+    save();
+  };
+
+  li.append(checkbox, span, del);
+  list.appendChild(li);
+}
+
+// حفظ
+function save() {
+  let data = [];
+  document.querySelectorAll("li").forEach(li => {
+    data.push({
+      text: li.querySelector("span").textContent,
+      done: li.querySelector("input").checked
+    });
+  });
+  localStorage.setItem("tasks", JSON.stringify(data));
+  render();
+}
+
+// فلترة + بحث
+function render() {
+  let search = document.getElementById("searchInput").value.toLowerCase();
+  let items = document.querySelectorAll("li");
+
+  items.forEach(li => {
+    let text = li.querySelector("span").textContent.toLowerCase();
+    let done = li.querySelector("input").checked;
+
+    let matchSearch = text.includes(search);
+
+    let matchFilter =
+      filter === "all" ||
+      (filter === "active" && !done) ||
+      (filter === "done" && done);
+
+    li.style.display = (matchSearch && matchFilter) ? "flex" : "none";
+  });
+}
+
+// تغيير الفلتر
+function setFilter(f) {
+  filter = f;
+
+  document.querySelectorAll(".filters button").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+
+  render();
+}
+</script>
+
+</body>
+</html>
